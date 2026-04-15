@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MLOps Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<style>
+body { font-family: 'Courier New'; background:#0d1117; color:#e6edf3; padding:20px; }
+
+.panel { background:#161b22; border:1px solid #21262d; border-radius:6px; margin-bottom:15px; }
+.panel-header { padding:10px; border-bottom:1px solid #21262d; color:#8b949e; }
+
+input { padding:6px; background:#0d1117; border:1px solid #30363d; color:white; }
+
+button { background:#238636; color:white; border:none; padding:8px; cursor:pointer; }
+
+</style>
+</head>
+
+<body>
+
+<h2>Heart Disease Dashboard</h2>
+
+<div class="panel">
+<div class="panel-header">Live Prediction</div>
+<div style="padding:10px">
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px">
+<input id="age" placeholder="Age">
+<input id="sex" placeholder="Sex (0/1)">
+<input id="cp" placeholder="CP">
+<input id="bp" placeholder="BP">
+<input id="chol" placeholder="Chol">
+<input id="fbs" placeholder="FBS">
+<input id="ecg" placeholder="ECG">
+<input id="hr" placeholder="MaxHR">
+<input id="exang" placeholder="Exang">
+<input id="oldpeak" placeholder="Oldpeak">
+</div>
+
+<button id="predict-btn" style="width:100%; margin-top:10px">Predict</button>
+
+<h3 id="result"></h3>
+
+</div>
+</div>
+
+<script>
+const API_BASE = "http://13.200.255.103:8000";
+const API_KEY = "mysecretkey123";
+
+document.getElementById("predict-btn").addEventListener("click", async () => {
+
+const data = {
+age: parseFloat(age.value),
+sex: parseInt(sex.value),
+cp: parseInt(cp.value),
+trestbps: parseFloat(bp.value),
+chol: parseFloat(chol.value),
+fbs: parseInt(fbs.value),
+restecg: parseInt(ecg.value),
+thalch: parseFloat(hr.value),
+exang: parseInt(exang.value),
+oldpeak: parseFloat(oldpeak.value)
+};
+
+document.getElementById("result").innerText = "Predicting...";
+
+try {
+const res = await fetch(API_BASE + "/predict", {
+method: "POST",
+headers: {
+"Content-Type": "application/json",
+"X-API-Key": API_KEY
+},
+body: JSON.stringify(data)
+});
+
+const out = await res.json();
+
+document.getElementById("result").innerText = "Result: " + out.result;
+
+} catch (e) {
+document.getElementById("result").innerText = "Error connecting to API";
+}
+
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Heart Disease Prediction</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap");
+
+  :root {
+    --bg-0: #0f1720;
+    --bg-1: #192634;
+    --surface: #f8fafc;
+    --surface-soft: #edf3f9;
+    --ink: #142435;
+    --ink-soft: #54708f;
+    --line: #d8e3ee;
+    --danger: #c93b2f;
+    --safe: #1f8f5f;
+    --pending: #c88716;
+    --shadow: 0 24px 60px rgba(8, 23, 40, 0.28);
+  }
+
+  body.theme-alt {
+    --bg-0: #1b102a;
+    --bg-1: #1b353d;
+    --surface: rgba(248, 245, 255, 0.86);
+    --surface-soft: #efe8ff;
+    --ink: #2a1748;
+    --ink-soft: #6f5898;
+    --line: #d8cff0;
+    --danger: #cf3e6c;
+    --safe: #1f8b87;
+    --pending: #bf6b2e;
+    --shadow: 0 24px 60px rgba(38, 17, 68, 0.4);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: "Space Grotesk", sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 2rem;
+    background:
+      radial-gradient(circle at 8% 8%, rgba(255, 255, 255, 0.12), transparent 38%),
+      radial-gradient(circle at 92% 88%, rgba(135, 191, 255, 0.22), transparent 30%),
+      linear-gradient(155deg, var(--bg-0), var(--bg-1));
+  }
+
+  .dashboard {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  body.theme-alt .dashboard {
+    position: relative;
+  }
+
+  body.theme-alt .dashboard::before {
+    content: "";
+    position: absolute;
+    top: -35px;
+    right: 6%;
+    width: 170px;
+    height: 170px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0));
+    pointer-events: none;
+  }
+
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: 1.25rem 1.5rem;
+    border-radius: 16px;
+    color: #f7fbff;
+    background: linear-gradient(120deg, rgba(18, 36, 56, 0.88), rgba(31, 54, 77, 0.75));
+    border: 1px solid rgba(196, 219, 241, 0.25);
+    box-shadow: var(--shadow);
+  }
+
+  body.theme-alt header {
+    background: linear-gradient(120deg, rgba(57, 27, 87, 0.9), rgba(24, 101, 110, 0.76));
+    border-color: rgba(241, 228, 255, 0.4);
+  }
+
+  .hero-copy {
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  .kicker {
+    font-size: 0.74rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #9fc3e9;
+  }
+
+  header h1 {
+    font-size: clamp(1.35rem, 2.2vw, 1.9rem);
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+  }
+
+  .subtitle {
+    font-size: 0.86rem;
+    color: #c5d8eb;
+  }
+
+  .header-tools {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  header span {
+    align-self: center;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    color: #b8cce1;
+  }
+
+  #theme-toggle {
+    border: 1px solid rgba(199, 220, 243, 0.45);
+    background: rgba(6, 23, 40, 0.32);
+    color: #f4f9ff;
+    border-radius: 999px;
+    padding: 0.36rem 0.75rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.16s ease, transform 0.16s ease;
+  }
+
+  #theme-toggle:hover {
+    background: rgba(38, 74, 106, 0.52);
+    transform: translateY(-1px);
+  }
+
+  body.theme-alt #theme-toggle {
+    background: rgba(242, 230, 255, 0.2);
+    border-color: rgba(246, 235, 255, 0.5);
+  }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(130px, 1fr));
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid rgba(201, 217, 234, 0.95);
+    border-radius: 14px;
+    padding: 1rem 1rem 1.1rem;
+    box-shadow: 0 10px 24px rgba(14, 35, 57, 0.14);
+  }
+
+  .stat-card .label {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.64rem;
+    color: var(--ink-soft);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 0.35rem;
+  }
+
+  .stat-card .value {
+    font-size: 1.7rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--ink);
+  }
+
+  .stat-card.danger .value { color: var(--danger); }
+  .stat-card.safe .value { color: var(--safe); }
+  .stat-card.pending .value { color: var(--pending); }
+
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 16px 32px rgba(11, 31, 51, 0.14);
+  }
+
+  body.theme-alt .panel {
+    backdrop-filter: blur(7px);
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.92rem 1.2rem;
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(237, 243, 249, 0.75), rgba(248, 250, 252, 0.95));
+  }
+
+  body.theme-alt .panel-header {
+    background: linear-gradient(180deg, rgba(230, 217, 255, 0.5), rgba(248, 245, 255, 0.92));
+  }
+
+  .panel-header h2 {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.13em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+  }
+
+  #run-btn {
+    background: linear-gradient(135deg, #126b9c, #0f8b95);
+    color: #f8fcff;
+    border: none;
+    border-radius: 999px;
+    padding: 0.45rem 1rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: transform 0.16s ease, box-shadow 0.16s ease;
+    box-shadow: 0 10px 20px rgba(18, 103, 148, 0.32);
+  }
+
+  #run-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 13px 22px rgba(16, 121, 159, 0.35);
+  }
+
+  #run-btn:disabled {
+    background: #c9d7e4;
+    color: #64819d;
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .table-wrap { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.74rem;
+  }
+
+  thead th {
+    padding: 0.62rem 0.72rem;
+    text-align: left;
+    color: #5f7994;
+    font-size: 0.63rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: #f2f7fc;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+
+  tbody tr { border-bottom: 1px solid #edf3f8; }
+  tbody tr:hover { background: #f5f9fd; }
+
+  tbody td {
+    padding: 0.62rem 0.72rem;
+    color: #24405e;
+    white-space: nowrap;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 0.2rem 0.52rem;
+    border-radius: 999px;
+    font-size: 0.64rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .badge-danger { background: #ffe6e2; color: var(--danger); border: 1px solid #f8b8af; }
+  .badge-safe { background: #daf7ea; color: var(--safe); border: 1px solid #9bddbf; }
+  .badge-loading { background: #fff4dd; color: #b5760b; border: 1px solid #f1cd85; }
+  .badge-error { background: #f0f4f8; color: #5f7994; border: 1px solid #cbd8e6; }
+
+  body.theme-alt .badge-danger { background: #ffe4ef; border-color: #f3adc8; }
+  body.theme-alt .badge-safe { background: #d5f6f1; border-color: #98ddd1; }
+  body.theme-alt .badge-loading { background: #ffe9da; border-color: #efc19f; }
+  body.theme-alt .badge-error { background: #f2edfb; color: #6f5898; border-color: #d7c8ee; }
+
+  .chart-panel { padding: 1.25rem; }
+
+  .chart-wrap {
+    position: relative;
+    height: 220px;
+    margin-bottom: 1rem;
+  }
+
+  .chart-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.48rem;
+    margin-top: 1rem;
+  }
+
+  .legend-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.79rem;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+
+  .legend-label { display: flex; align-items: center; color: #36516d; }
+  .legend-count {
+    color: #5f7994;
+    font-family: "IBM Plex Mono", monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .progress-bar-wrap {
+    height: 6px;
+    background: #e2ebf4;
+    border-radius: 999px;
+    margin-top: 6px;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.6s ease;
+  }
+
+  .api-config {
+    padding: 1rem 1.2rem;
+    border-top: 1px solid var(--line);
+    font-size: 0.72rem;
+    color: #5f7994;
+    font-family: "IBM Plex Mono", monospace;
+  }
+
+  .api-config .url {
+    color: #126b9c;
+    word-break: break-all;
+    margin-top: 6px;
+  }
+
+  body.theme-alt .api-config .url {
+    color: #763fc7;
+  }
+
+  #status-bar {
+    margin-top: 0.5rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.68rem;
+    color: #5f7994;
+    min-height: 16px;
+    letter-spacing: 0.02em;
+  }
+
+  @media (max-width: 940px) {
+    body { padding: 1rem; }
+    .main-grid { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(2, minmax(130px, 1fr)); }
+  }
+
+  @media (max-width: 540px) {
+    .stats-row { grid-template-columns: 1fr; }
+    .panel-header { gap: 0.5rem; align-items: flex-start; }
+    #run-btn { width: 100%; }
+    .header-tools { margin-left: 0; width: 100%; justify-content: space-between; }
+  }
+</style>
+</head>
+<body>
+
+<div class="dashboard">
+
+<header>
+  <div class="hero-copy">
+    <div class="kicker">Clinical Intelligence Console</div>
+    <h1>Heart Disease Prediction</h1>
+    <div class="subtitle">Batch predictions from test records with live visual breakdown.</div>
+  </div>
+  <div class="header-tools">
+    <span id="api-status">● connecting…</span>
+    <button id="theme-toggle" type="button" onclick="toggleTheme()">Aurora Theme</button>
+  </div>
+</header>
+
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="label">Total Patients</div>
+    <div class="value" id="stat-total">15</div>
+  </div>
+  <div class="stat-card pending">
+    <div class="label">Pending</div>
+    <div class="value" id="stat-pending">15</div>
+  </div>
+  <div class="stat-card danger">
+    <div class="label">Disease Detected</div>
+    <div class="value" id="stat-disease">0</div>
+  </div>
+  <div class="stat-card safe">
+    <div class="label">No Disease</div>
+    <div class="value" id="stat-safe">0</div>
+  </div>
+</div>
+
+<div class="main-grid">
+
+  <div class="panel">
+    <div class="panel-header">
+      <h2>Test Dataset</h2>
+      <button id="run-btn" onclick="runAll()">&#9654; Run All Predictions</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Age</th>
+            <th>Sex</th>
+            <th>CP</th>
+            <th>BP</th>
+            <th>Chol</th>
+            <th>FBS</th>
+            <th>ECG</th>
+            <th>MaxHR</th>
+            <th>Exang</th>
+            <th>OldPeak</th>
+            <th>Result</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div id="status-bar" style="padding: 0.75rem 1.25rem;"></div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <div class="panel-header"><h2>Distribution</h2></div>
+      <div class="chart-panel">
+        <div class="chart-wrap">
+          <canvas id="pieChart"></canvas>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-row">
+            <span class="legend-label"><span class="legend-dot" style="background:#da3633"></span>Disease Detected</span>
+            <span class="legend-count" id="leg-disease">0</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar" id="bar-disease" style="background:#da3633; width:0%"></div>
+          </div>
+          <div class="legend-row" style="margin-top:8px">
+            <span class="legend-label"><span class="legend-dot" style="background:#3fb950"></span>No Disease</span>
+            <span class="legend-count" id="leg-safe">0</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar" id="bar-safe" style="background:#3fb950; width:0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:12px">
+      <div class="panel-header"><h2>API Config</h2></div>
+      <div class="api-config">
+        <div>Endpoint</div>
+        <div class="url" id="api-url-display"></div>
+        <div style="margin-top:10px">Auth header: <span style="color:var(--ink)">X-API-Key</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</div>
+
+<script>
+const API_BASE = "http://13.200.255.103:8000";
+const API_KEY  = "mysecretkey123";
+
+const testData = [
+  { age:63, sex:1, cp:3, trestbps:145, chol:233, fbs:1, restecg:0, thalch:150, exang:0, oldpeak:2.3 },
+  { age:37, sex:1, cp:2, trestbps:130, chol:250, fbs:0, restecg:1, thalch:187, exang:0, oldpeak:3.5 },
+  { age:41, sex:0, cp:1, trestbps:130, chol:204, fbs:0, restecg:0, thalch:172, exang:0, oldpeak:1.4 },
+  { age:56, sex:1, cp:1, trestbps:120, chol:236, fbs:0, restecg:1, thalch:178, exang:0, oldpeak:0.8 },
+  { age:57, sex:0, cp:0, trestbps:120, chol:354, fbs:0, restecg:1, thalch:163, exang:1, oldpeak:0.6 },
+  { age:57, sex:1, cp:0, trestbps:140, chol:192, fbs:0, restecg:1, thalch:148, exang:0, oldpeak:0.4 },
+  { age:56, sex:0, cp:1, trestbps:140, chol:294, fbs:0, restecg:2, thalch:153, exang:0, oldpeak:1.3 },
+  { age:44, sex:1, cp:1, trestbps:120, chol:263, fbs:0, restecg:1, thalch:173, exang:0, oldpeak:0.0 },
+  { age:52, sex:1, cp:2, trestbps:172, chol:199, fbs:1, restecg:1, thalch:162, exang:0, oldpeak:0.5 },
+  { age:57, sex:1, cp:2, trestbps:150, chol:168, fbs:0, restecg:1, thalch:174, exang:0, oldpeak:1.6 },
+  { age:54, sex:1, cp:0, trestbps:140, chol:239, fbs:0, restecg:1, thalch:160, exang:0, oldpeak:1.2 },
+  { age:48, sex:0, cp:2, trestbps:130, chol:275, fbs:0, restecg:1, thalch:139, exang:0, oldpeak:0.2 },
+  { age:49, sex:1, cp:1, trestbps:130, chol:266, fbs:0, restecg:1, thalch:171, exang:0, oldpeak:0.6 },
+  { age:64, sex:1, cp:3, trestbps:110, chol:211, fbs:0, restecg:0, thalch:144, exang:1, oldpeak:1.8 },
+  { age:58, sex:0, cp:3, trestbps:150, chol:283, fbs:1, restecg:0, thalch:162, exang:0, oldpeak:1.0 },
+];
+
+let results = new Array(testData.length).fill(null);
+let chart;
+let activeTheme = "clinical";
+
+document.getElementById("api-url-display").textContent = API_BASE + "/predict";
+
+function setTheme(theme) {
+  activeTheme = theme === "aurora" ? "aurora" : "clinical";
+  document.body.classList.toggle("theme-alt", activeTheme === "aurora");
+  document.getElementById("theme-toggle").textContent = activeTheme === "aurora" ? "Clinical Theme" : "Aurora Theme";
+  localStorage.setItem("exp9-theme", activeTheme);
+}
+
+function toggleTheme() {
+  setTheme(activeTheme === "aurora" ? "clinical" : "aurora");
+}
+
+function buildTable() {
+  const tbody = document.getElementById("tbody");
+  tbody.innerHTML = testData.map((r, i) => `
+    <tr id="row-${i}">
+      <td style="color:#8b949e">${i + 1}</td>
+      <td>${r.age}</td>
+      <td>${r.sex === 1 ? 'M' : 'F'}</td>
+      <td>${r.cp}</td>
+      <td>${r.trestbps}</td>
+      <td>${r.chol}</td>
+      <td>${r.fbs}</td>
+      <td>${r.restecg}</td>
+      <td>${r.thalch}</td>
+      <td>${r.exang}</td>
+      <td>${r.oldpeak.toFixed(1)}</td>
+      <td id="res-${i}"><span class="badge badge-loading">pending</span></td>
+    </tr>
+  `).join("");
+}
+
+function initChart() {
+  const ctx = document.getElementById("pieChart").getContext("2d");
+  chart = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: ["Disease Detected", "No Disease"],
+      datasets: [{
+        data: [0, 0],
+        backgroundColor: ["#da3633", "#3fb950"],
+        borderColor: "#161b22",
+        borderWidth: 3,
+        hoverOffset: 4,
+      }]
+    },
+    options: {
+      cutout: "68%",
+      plugins: { legend: { display: false }, tooltip: {
+        callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}` }
+      }},
+      animation: { animateRotate: true, duration: 600 }
+    }
+  });
+}
+
+function updateStats() {
+  const done    = results.filter(r => r !== null);
+  const disease = done.filter(r => r === 1).length;
+  const safe    = done.filter(r => r === 0).length;
+  const pending = testData.length - done.length;
+  const total   = testData.length;
+
+  document.getElementById("stat-pending").textContent = pending;
+  document.getElementById("stat-disease").textContent = disease;
+  document.getElementById("stat-safe").textContent    = safe;
+
+  chart.data.datasets[0].data = [disease, safe];
+  chart.update();
+
+  document.getElementById("leg-disease").textContent = disease;
+  document.getElementById("leg-safe").textContent    = safe;
+  document.getElementById("bar-disease").style.width = total ? (disease / total * 100).toFixed(0) + "%" : "0%";
+  document.getElementById("bar-safe").style.width    = total ? (safe    / total * 100).toFixed(0) + "%" : "0%";
+}
+
+async function predict(index) {
+  const row = testData[index];
+  document.getElementById(`res-${index}`).innerHTML = '<span class="badge badge-loading">…</span>';
+  try {
+    const resp = await fetch(`${API_BASE}/predict`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-API-Key": API_KEY },
+      body: JSON.stringify(row)
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    results[index] = data.prediction;
+    const isDisease = data.prediction === 1;
+    document.getElementById(`res-${index}`).innerHTML =
+      `<span class="badge ${isDisease ? 'badge-danger' : 'badge-safe'}">${isDisease ? 'disease' : 'clear'}</span>`;
+  } catch (e) {
+    document.getElementById(`res-${index}`).innerHTML = '<span class="badge badge-error">error</span>';
+  }
+  updateStats();
+}
+
+async function runAll() {
+  const btn = document.getElementById("run-btn");
+  btn.disabled = true;
+  btn.textContent = "Running…";
+  results = new Array(testData.length).fill(null);
+  updateStats();
+
+  const status = document.getElementById("status-bar");
+
+  for (let i = 0; i < testData.length; i++) {
+    status.textContent = `Sending request ${i + 1} / ${testData.length}…`;
+    await predict(i);
+    await new Promise(r => setTimeout(r, 120));
+  }
+
+  status.textContent = `Done — ${testData.length} predictions completed.`;
+  btn.disabled = false;
+  btn.textContent = "↺ Re-run";
+}
+
+async function checkHealth() {
+  const el = document.getElementById("api-status");
+  try {
+    const r = await fetch(`${API_BASE}/`);
+    if (r.ok) { el.textContent = "● API online"; el.style.color = "#3fb950"; }
+    else throw new Error();
+  } catch {
+    el.textContent = "● API unreachable"; el.style.color = "#da3633";
+  }
+}
+
+const savedTheme = localStorage.getItem("exp9-theme");
+if (savedTheme) {
+  setTheme(savedTheme);
+}
+
+buildTable();
+initChart();
+checkHealth();
+</script>
+</body>
+</html>
